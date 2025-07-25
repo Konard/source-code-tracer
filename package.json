@@ -1,0 +1,42 @@
+{
+  "name": "source-code-tracer",
+  "version": "0.0.1",
+  "description": "CLI tool to add console.log statements after meaningful code lines using Tree-sitter",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.js",
+    "test": "bun run test-runner.js"
+  },
+  "dependencies": {
+    "tree-sitter": "^0.21.0",
+    "tree-sitter-javascript": "^0.21.0",
+    "tree-sitter-typescript": "^0.21.0",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0"
+  },
+  "keywords": ["cli", "tree-sitter", "code-tracing", "debugging", "console-log", "typescript", "javascript"],
+  "author": "",
+  "license": "Unlicense",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/konard/source-code-tracer.git"
+  },
+  "homepage": "https://github.com/konard/source-code-tracer#readme",
+  "bugs": {
+    "url": "https://github.com/konard/source-code-tracer/issues"
+  },
+  "bin": {
+    "source-code-tracer": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
