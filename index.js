@@ -46,7 +46,7 @@ function isRealCode(node) {
 }
 
 function processFile(filePath, options = {}) {
-  const { trace = true, inPlace = false } = options;
+  const { trace = true, createCopy = false } = options;
   
   if (!trace) {
     return untraceFile(filePath, inPlace);
@@ -62,10 +62,9 @@ function processFile(filePath, options = {}) {
   
   const sourceCode = fs.readFileSync(filePath, 'utf8');
   
-  if (inPlace) {
-    const backupPath = filePath.replace(/(\.[^.]+)$/, '.untraced$1');
-    fs.writeFileSync(backupPath, sourceCode);
-  }
+  // Always create backup for untracing
+  const backupPath = filePath.replace(/(\.[^.]+)$/, '.untraced$1');
+  fs.writeFileSync(backupPath, sourceCode);
   
   const tree = parser.parse(sourceCode);
   
@@ -99,9 +98,14 @@ function processFile(filePath, options = {}) {
     lines.splice(mod.line + 1, 0, mod.content);
   }
   
-  const outputPath = inPlace ? filePath : filePath.replace(/(\.[^.]+)$/, '.traced$1');
+  const outputPath = createCopy ? filePath.replace(/(\.[^.]+)$/, '.traced$1') : filePath;
   fs.writeFileSync(outputPath, lines.join('\n'));
-  console.log(`Processed: ${filePath} -> ${outputPath}`);
+  
+  if (createCopy) {
+    console.log(`Processed: ${filePath} -> ${outputPath}`);
+  } else {
+    console.log(`Traced: ${filePath} (backup saved as ${path.basename(backupPath)})`);
+  }
 }
 
 function untraceFile(filePath, inPlace = false) {
