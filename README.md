@@ -59,6 +59,24 @@ bun run index.js path/to/file.js
 npm start path/to/file.js
 ```
 
+### Advanced Options
+
+#### Untrace Files
+Remove tracing from previously traced files:
+```bash
+source-code-tracer --untrace file.traced.js
+source-code-tracer -u file.traced.js
+```
+
+#### In-Place Modification
+Modify files directly instead of creating .traced versions:
+```bash
+source-code-tracer --in-place file.js
+source-code-tracer -i file.js
+```
+
+When using `--in-place`, the tool creates a backup file with `.untraced` extension before modifying the original.
+
 ### Help
 
 ```bash
@@ -144,6 +162,17 @@ The test suite verifies:
 - TypeScript support
 - Console.log format correctness
 - Meaningful line detection
+- Untrace functionality
+- In-place modification with backup creation
+- Help command functionality
+
+### Example Tests
+
+The `examples/` directory contains comprehensive test files:
+- `example.js` - Basic JavaScript example
+- `example.ts` - TypeScript with interfaces and classes
+- `comprehensive.js` - Advanced JavaScript features
+- `comprehensive.ts` - Advanced TypeScript with generics and types
 
 ## How It Works
 

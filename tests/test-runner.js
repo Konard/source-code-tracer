@@ -118,6 +118,9 @@ async function runTests() {
   // Test 4: Verify console.log format
   log(YELLOW, '🔍 Test 4: Verify console.log format');
   try {
+    // Generate traced file for testing
+    await runCommand('bun', ['run', 'index.js', 'test.js']);
+    
     if (fs.existsSync('test.traced.js')) {
       const content = fs.readFileSync('test.traced.js', 'utf8');
       const lines = content.split('\n');
@@ -152,6 +155,11 @@ async function runTests() {
   // Test 5: Check that meaningful lines are traced
   log(YELLOW, '📝 Test 5: Check meaningful lines are traced');
   try {
+    // Ensure we have a traced file
+    if (!fs.existsSync('test.traced.js')) {
+      await runCommand('bun', ['run', 'index.js', 'test.js']);
+    }
+    
     if (fs.existsSync('test.traced.js')) {
       const content = fs.readFileSync('test.traced.js', 'utf8');
       const originalLines = fs.readFileSync('test.js', 'utf8').split('\n');
@@ -183,6 +191,82 @@ async function runTests() {
     failed++;
   }
   
+  // Test 6: Untrace functionality
+  log(YELLOW, '🔄 Test 6: Untrace functionality');
+  try {
+    // First create a traced file
+    await runCommand('bun', ['run', 'index.js', 'test.js']);
+    
+    if (fs.existsSync('test.traced.js')) {
+      // Now untrace it
+      const result = await runCommand('bun', ['run', 'index.js', '--untrace', 'test.traced.js']);
+      
+      if (result.code === 0 && !fs.existsSync('test.traced.js')) {
+        log(GREEN, '✅ PASSED: Untrace functionality works correctly');
+        passed++;
+      } else {
+        log(RED, '❌ FAILED: Untrace did not remove traced file');
+        failed++;
+      }
+    } else {
+      log(RED, '❌ FAILED: Could not create traced file for untrace test');
+      failed++;
+    }
+  } catch (error) {
+    log(RED, `❌ FAILED: ${error.message}`);
+    failed++;
+  }
+  
+  // Test 7: In-place functionality
+  log(YELLOW, '📝 Test 7: In-place functionality');
+  try {
+    // Create a copy of test.js for in-place testing
+    const testContent = fs.readFileSync('test.js', 'utf8');
+    fs.writeFileSync('test-inplace.js', testContent);
+    
+    const result = await runCommand('bun', ['run', 'index.js', '--in-place', 'test-inplace.js']);
+    
+    if (result.code === 0 && fs.existsSync('test-inplace.untraced.js')) {
+      const modifiedContent = fs.readFileSync('test-inplace.js', 'utf8');
+      const hasConsoleLog = modifiedContent.includes("console.log('/Users/konard/Code/konard/source-code-tracer/test-inplace.js:");
+      
+      if (hasConsoleLog) {
+        log(GREEN, '✅ PASSED: In-place tracing works correctly');
+        passed++;
+      } else {
+        log(RED, '❌ FAILED: In-place tracing did not add console.log statements');
+        failed++;
+      }
+      
+      // Clean up
+      if (fs.existsSync('test-inplace.js')) fs.unlinkSync('test-inplace.js');
+      if (fs.existsSync('test-inplace.untraced.js')) fs.unlinkSync('test-inplace.untraced.js');
+    } else {
+      log(RED, '❌ FAILED: In-place functionality failed or backup not created');
+      failed++;
+    }
+  } catch (error) {
+    log(RED, `❌ FAILED: ${error.message}`);
+    failed++;
+  }
+  
+  // Test 8: Help command
+  log(YELLOW, '❓ Test 8: Help command');
+  try {
+    const result = await runCommand('bun', ['run', 'index.js', '--help']);
+    
+    if (result.code === 0 && result.stdout.includes('Usage:')) {
+      log(GREEN, '✅ PASSED: Help command works correctly');
+      passed++;
+    } else {
+      log(RED, '❌ FAILED: Help command did not work as expected');
+      failed++;
+    }
+  } catch (error) {
+    log(RED, `❌ FAILED: ${error.message}`);
+    failed++;
+  }
+
   // Summary
   log(YELLOW, '\n📊 Test Summary:');
   log(GREEN, `✅ Passed: ${passed}`);

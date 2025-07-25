@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "bun run index.js",
-    "test": "bun run test-runner.js"
+    "test": "bun run tests/test-runner.js"
   },
   "dependencies": {
     "tree-sitter": "^0.21.0",
