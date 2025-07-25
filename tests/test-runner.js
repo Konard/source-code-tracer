@@ -43,11 +43,11 @@ async function runTests() {
   // Test 1: Single JavaScript file processing
   log(YELLOW, '📄 Test 1: Single JavaScript file processing');
   try {
-    const result = await runCommand('bun', ['run', 'index.js', 'test.js']);
+    const result = await runCommand('bun', ['run', 'index.js', 'examples/example.js']);
     
-    if (result.code === 0 && fs.existsSync('test.traced.js')) {
-      const tracedContent = fs.readFileSync('test.traced.js', 'utf8');
-      const hasConsoleLog = tracedContent.includes("console.log('/Users/konard/Code/konard/source-code-tracer/test.js:");
+    if (result.code === 0 && fs.existsSync('examples/example.traced.js')) {
+      const tracedContent = fs.readFileSync('examples/example.traced.js', 'utf8');
+      const hasConsoleLog = tracedContent.includes("console.log('/Users/konard/Code/konard/source-code-tracer/examples/example.js:");
       
       if (hasConsoleLog) {
         log(GREEN, '✅ PASSED: Single JS file processed successfully');
@@ -68,11 +68,11 @@ async function runTests() {
   // Test 2: TypeScript file processing
   log(YELLOW, '📄 Test 2: TypeScript file processing');
   try {
-    const result = await runCommand('bun', ['run', 'index.js', 'test.ts']);
+    const result = await runCommand('bun', ['run', 'index.js', 'examples/example.ts']);
     
-    if (result.code === 0 && fs.existsSync('test.traced.ts')) {
-      const tracedContent = fs.readFileSync('test.traced.ts', 'utf8');
-      const hasConsoleLog = tracedContent.includes("console.log('/Users/konard/Code/konard/source-code-tracer/test.ts:");
+    if (result.code === 0 && fs.existsSync('examples/example.traced.ts')) {
+      const tracedContent = fs.readFileSync('examples/example.traced.ts', 'utf8');
+      const hasConsoleLog = tracedContent.includes("console.log('/Users/konard/Code/konard/source-code-tracer/examples/example.ts:");
       
       if (hasConsoleLog) {
         log(GREEN, '✅ PASSED: TypeScript file processed successfully');
@@ -93,11 +93,11 @@ async function runTests() {
   // Test 3: Directory processing
   log(YELLOW, '📁 Test 3: Directory processing');
   try {
-    const result = await runCommand('bun', ['run', 'index.js', 'test-dir']);
+    const result = await runCommand('bun', ['run', 'index.js', 'examples/test-dir']);
     
-    if (result.code === 0 && fs.existsSync('test-dir/sample.traced.js')) {
-      const tracedContent = fs.readFileSync('test-dir/sample.traced.js', 'utf8');
-      const hasConsoleLog = tracedContent.includes("console.log('/Users/konard/Code/konard/source-code-tracer/test-dir/sample.js:");
+    if (result.code === 0 && fs.existsSync('examples/test-dir/sample.traced.js')) {
+      const tracedContent = fs.readFileSync('examples/test-dir/sample.traced.js', 'utf8');
+      const hasConsoleLog = tracedContent.includes("console.log('/Users/konard/Code/konard/source-code-tracer/examples/test-dir/sample.js:");
       
       if (hasConsoleLog) {
         log(GREEN, '✅ PASSED: Directory processed successfully');

@@ -45,7 +45,13 @@ function isRealCode(node) {
   return meaningfulTypes.includes(node.type);
 }
 
-function processFile(filePath) {
+function processFile(filePath, options = {}) {
+  const { trace = true, inPlace = false } = options;
+  
+  if (!trace) {
+    return untraceFile(filePath, inPlace);
+  }
+  
   const language = getLanguageForFile(filePath);
   if (!language) {
     console.log(`Skipping ${filePath}: unsupported file type`);
@@ -55,6 +61,12 @@ function processFile(filePath) {
   parser.setLanguage(language);
   
   const sourceCode = fs.readFileSync(filePath, 'utf8');
+  
+  if (inPlace) {
+    const backupPath = filePath.replace(/(\.[^.]+)$/, '.untraced$1');
+    fs.writeFileSync(backupPath, sourceCode);
+  }
+  
   const tree = parser.parse(sourceCode);
   
   const lines = sourceCode.split('\n');
@@ -87,30 +99,74 @@ function processFile(filePath) {
     lines.splice(mod.line + 1, 0, mod.content);
   }
   
-  const outputPath = filePath.replace(/(\.[^.]+)$/, '.traced$1');
+  const outputPath = inPlace ? filePath : filePath.replace(/(\.[^.]+)$/, '.traced$1');
   fs.writeFileSync(outputPath, lines.join('\n'));
   console.log(`Processed: ${filePath} -> ${outputPath}`);
 }
 
-function processDirectory(dirPath) {
+function untraceFile(filePath, inPlace = false) {
+  let originalPath;
+  
+  if (inPlace) {
+    originalPath = filePath.replace(/(\.[^.]+)$/, '.untraced$1');
+    if (!fs.existsSync(originalPath)) {
+      console.log(`No backup found for ${filePath}. Cannot untrace in-place.`);
+      return;
+    }
+    
+    const originalContent = fs.readFileSync(originalPath, 'utf8');
+    fs.writeFileSync(filePath, originalContent);
+    fs.unlinkSync(originalPath);
+    console.log(`Untraced: ${filePath} (restored from backup)`);
+  } else {
+    if (filePath.includes('.traced.')) {
+      originalPath = filePath.replace(/\.traced(\.[^.]+)$/, '$1');
+    } else {
+      console.log(`File ${filePath} doesn't appear to be traced`);
+      return;
+    }
+    
+    if (!fs.existsSync(originalPath)) {
+      console.log(`Original file not found: ${originalPath}`);
+      return;
+    }
+    
+    fs.unlinkSync(filePath);
+    console.log(`Untraced: ${filePath} (deleted traced file)`);
+  }
+}
+
+function processDirectory(dirPath, options = {}) {
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
   
   for (const entry of entries) {
     const fullPath = path.join(dirPath, entry.name);
     
     if (entry.isDirectory()) {
-      processDirectory(fullPath);
+      processDirectory(fullPath, options);
     } else if (entry.isFile() && getLanguageForFile(entry.name)) {
-      processFile(fullPath);
+      processFile(fullPath, options);
     }
   }
 }
 
 const argv = yargs(hideBin(process.argv))
-  .usage('Usage: $0 <path>')
+  .usage('Usage: $0 <path> [options]')
   .positional('path', {
     describe: 'File or directory to process',
     type: 'string'
+  })
+  .option('untrace', {
+    alias: 'u',
+    type: 'boolean',
+    default: false,
+    describe: 'Remove tracing instead of adding it'
+  })
+  .option('in-place', {
+    alias: 'i',
+    type: 'boolean',
+    default: false,
+    describe: 'Modify files in-place (creates .untraced backup for tracing)'
   })
   .help()
   .argv;
@@ -130,10 +186,15 @@ if (!fs.existsSync(targetPath)) {
 const fullPath = path.resolve(targetPath);
 const stats = fs.statSync(fullPath);
 
+const options = {
+  trace: !argv.untrace,
+  inPlace: argv['in-place']
+};
+
 if (stats.isDirectory()) {
-  processDirectory(fullPath);
+  processDirectory(fullPath, options);
 } else if (stats.isFile()) {
-  processFile(fullPath);
+  processFile(fullPath, options);
 } else {
   console.error(`Invalid path: ${targetPath}`);
   process.exit(1);
