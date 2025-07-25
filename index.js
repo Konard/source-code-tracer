@@ -46,7 +46,7 @@ function isRealCode(node) {
 }
 
 function processFile(filePath, options = {}) {
-  const { trace = true, createCopy = false } = options;
+  const { trace = true, createCopy = false, inPlace = false } = options;
   
   if (!trace) {
     return untraceFile(filePath, inPlace);
@@ -62,9 +62,14 @@ function processFile(filePath, options = {}) {
   
   const sourceCode = fs.readFileSync(filePath, 'utf8');
   
-  // Always create backup for untracing
-  const backupPath = filePath.replace(/(\.[^.]+)$/, '.untraced$1');
-  fs.writeFileSync(backupPath, sourceCode);
+  // Always create backup for untracing when in-place mode
+  if (inPlace && !createCopy) {
+    const backupPath = filePath.replace(/(\.[^.]+)$/, '.untraced.original');
+    // Only create backup if it doesn't exist (preserve original)
+    if (!fs.existsSync(backupPath)) {
+      fs.writeFileSync(backupPath, sourceCode);
+    }
+  }
   
   const tree = parser.parse(sourceCode);
   
@@ -103,8 +108,11 @@ function processFile(filePath, options = {}) {
   
   if (createCopy) {
     console.log(`Processed: ${filePath} -> ${outputPath}`);
-  } else {
+  } else if (inPlace) {
+    const backupPath = filePath.replace(/(\.[^.]+)$/, '.untraced.original');
     console.log(`Traced: ${filePath} (backup saved as ${path.basename(backupPath)})`);
+  } else {
+    console.log(`Traced: ${filePath}`);
   }
 }
 
@@ -112,7 +120,7 @@ function untraceFile(filePath, inPlace = false) {
   let originalPath;
   
   if (inPlace) {
-    originalPath = filePath.replace(/(\.[^.]+)$/, '.untraced$1');
+    originalPath = filePath.replace(/(\.[^.]+)$/, '.untraced.original');
     if (!fs.existsSync(originalPath)) {
       console.log(`No backup found for ${filePath}. Cannot untrace in-place.`);
       return;
@@ -149,7 +157,10 @@ function processDirectory(dirPath, options = {}) {
     if (entry.isDirectory()) {
       processDirectory(fullPath, options);
     } else if (entry.isFile() && getLanguageForFile(entry.name)) {
-      processFile(fullPath, options);
+      // Skip already traced files to avoid double-tracing
+      if (!entry.name.includes('.traced.') && !entry.name.includes('.untraced.')) {
+        processFile(fullPath, options);
+      }
     }
   }
 }
@@ -170,7 +181,7 @@ const argv = yargs(hideBin(process.argv))
     alias: 'i',
     type: 'boolean',
     default: false,
-    describe: 'Modify files in-place (creates .untraced backup for tracing)'
+    describe: 'Modify files in-place (creates .untraced.original backup for tracing)'
   })
   .help()
   .argv;
@@ -192,7 +203,8 @@ const stats = fs.statSync(fullPath);
 
 const options = {
   trace: !argv.untrace,
-  inPlace: argv['in-place']
+  inPlace: argv['in-place'],
+  createCopy: !argv['in-place'] && argv.untrace !== true
 };
 
 if (stats.isDirectory()) {

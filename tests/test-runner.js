@@ -226,7 +226,7 @@ async function runTests() {
     
     const result = await runCommand('bun', ['run', 'index.js', '--in-place', 'test-inplace.js']);
     
-    if (result.code === 0 && fs.existsSync('test-inplace.untraced.js')) {
+    if (result.code === 0 && fs.existsSync('test-inplace.untraced.original')) {
       const modifiedContent = fs.readFileSync('test-inplace.js', 'utf8');
       const hasConsoleLog = modifiedContent.includes("console.log('/Users/konard/Code/konard/source-code-tracer/test-inplace.js:");
       
@@ -240,7 +240,7 @@ async function runTests() {
       
       // Clean up
       if (fs.existsSync('test-inplace.js')) fs.unlinkSync('test-inplace.js');
-      if (fs.existsSync('test-inplace.untraced.js')) fs.unlinkSync('test-inplace.untraced.js');
+      if (fs.existsSync('test-inplace.untraced.original')) fs.unlinkSync('test-inplace.untraced.original');
     } else {
       log(RED, '❌ FAILED: In-place functionality failed or backup not created');
       failed++;
@@ -250,8 +250,50 @@ async function runTests() {
     failed++;
   }
   
-  // Test 8: Help command
-  log(YELLOW, '❓ Test 8: Help command');
+  // Test 8: In-place untrace functionality
+  log(YELLOW, '🔄 Test 8: In-place untrace functionality');
+  try {
+    // Create a copy of test.js for in-place testing
+    const testContent = fs.readFileSync('test.js', 'utf8');
+    fs.writeFileSync('test-untrace.js', testContent);
+    
+    // First trace in-place
+    await runCommand('bun', ['run', 'index.js', '--in-place', 'test-untrace.js']);
+    
+    if (fs.existsSync('test-untrace.untraced.original')) {
+      // Now untrace in-place
+      const result = await runCommand('bun', ['run', 'index.js', '--untrace', '--in-place', 'test-untrace.js']);
+      
+      if (result.code === 0 && !fs.existsSync('test-untrace.untraced.original')) {
+        const restoredContent = fs.readFileSync('test-untrace.js', 'utf8');
+        const hasNoConsoleLog = !restoredContent.includes("console.log('/Users/konard/Code/konard/source-code-tracer/test-untrace.js:");
+        
+        if (hasNoConsoleLog && restoredContent === testContent) {
+          log(GREEN, '✅ PASSED: In-place untrace restored original file correctly');
+          passed++;
+        } else {
+          log(RED, '❌ FAILED: In-place untrace did not restore original content');
+          failed++;
+        }
+      } else {
+        log(RED, '❌ FAILED: In-place untrace failed or backup not removed');
+        failed++;
+      }
+      
+      // Clean up
+      if (fs.existsSync('test-untrace.js')) fs.unlinkSync('test-untrace.js');
+      if (fs.existsSync('test-untrace.untraced.original')) fs.unlinkSync('test-untrace.untraced.original');
+    } else {
+      log(RED, '❌ FAILED: Could not create backup for in-place untrace test');
+      failed++;
+    }
+  } catch (error) {
+    log(RED, `❌ FAILED: ${error.message}`);
+    failed++;
+  }
+  
+  // Test 9: Help command
+  log(YELLOW, '❓ Test 9: Help command');
   try {
     const result = await runCommand('bun', ['run', 'index.js', '--help']);
     
@@ -262,6 +304,66 @@ async function runTests() {
       log(RED, '❌ FAILED: Help command did not work as expected');
       failed++;
     }
+  } catch (error) {
+    log(RED, `❌ FAILED: ${error.message}`);
+    failed++;
+  }
+  
+  // Test 10: Multiple traces on the same file
+  log(YELLOW, '🔁 Test 10: Multiple traces on the same file');
+  try {
+    const testContent = fs.readFileSync('test.js', 'utf8');
+    fs.writeFileSync('test-multiple.js', testContent);
+    
+    // First trace (creates backup)
+    await runCommand('bun', ['run', 'index.js', '--in-place', 'test-multiple.js']);
+    
+    if (fs.existsSync('test-multiple.untraced.original')) {
+      const firstBackupContent = fs.readFileSync('test-multiple.untraced.original', 'utf8');
+      
+      // Second trace (should not overwrite backup)
+      await runCommand('bun', ['run', 'index.js', '--in-place', 'test-multiple.js']);
+      
+      const secondBackupContent = fs.readFileSync('test-multiple.untraced.original', 'utf8');
+      
+      if (firstBackupContent === testContent && secondBackupContent === testContent) {
+        log(GREEN, '✅ PASSED: Multiple traces preserve original backup correctly');
+        passed++;
+      } else {
+        log(RED, '❌ FAILED: Backup was corrupted during multiple traces');
+        failed++;
+      }
+      
+      // Clean up
+      if (fs.existsSync('test-multiple.js')) fs.unlinkSync('test-multiple.js');
+      if (fs.existsSync('test-multiple.untraced.original')) fs.unlinkSync('test-multiple.untraced.original');
+    } else {
+      log(RED, '❌ FAILED: Backup not created during first trace');
+      failed++;
+    }
+  } catch (error) {
+    log(RED, `❌ FAILED: ${error.message}`);
+    failed++;
+  }
+  
+  // Test 11: Untrace without backup
+  log(YELLOW, '⚠️  Test 11: Untrace without backup');
+  try {
+    fs.writeFileSync('test-no-backup.js', 'console.log("test");');
+    
+    // Try to untrace in-place without backup
+    const result = await runCommand('bun', ['run', 'index.js', '--untrace', '--in-place', 'test-no-backup.js']);
+    
+    if (result.stdout.includes('No backup found')) {
+      log(GREEN, '✅ PASSED: Properly handles untrace without backup');
+      passed++;
+    } else {
+      log(RED, '❌ FAILED: Did not handle missing backup correctly');
+      failed++;
+    }
+    
+    // Clean up
+    if (fs.existsSync('test-no-backup.js')) fs.unlinkSync('test-no-backup.js');
   } catch (error) {
     log(RED, `❌ FAILED: ${error.message}`);
     failed++;

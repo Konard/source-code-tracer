@@ -64,8 +64,13 @@ npm start path/to/file.js
 #### Untrace Files
 Remove tracing from previously traced files:
 ```bash
+# For traced copies
 source-code-tracer --untrace file.traced.js
 source-code-tracer -u file.traced.js
+
+# For in-place traced files (restores from .untraced.original backup)
+source-code-tracer --untrace --in-place file.js
+source-code-tracer -u -i file.js
 ```
 
 #### In-Place Modification
@@ -75,7 +80,7 @@ source-code-tracer --in-place file.js
 source-code-tracer -i file.js
 ```
 
-When using `--in-place`, the tool creates a backup file with `.untraced` extension before modifying the original.
+When using `--in-place`, the tool creates a backup file with `.untraced.original` extension before modifying the original. This backup preserves the original untouched code and is used for restoration when untracing.
 
 ### Help
 
@@ -87,9 +92,16 @@ bun run index.js --help
 
 ## Output
 
+### Default Mode
 The tool creates traced versions of files with the `.traced` suffix:
 - `file.js` → `file.traced.js`
 - `component.tsx` → `component.traced.tsx`
+
+### In-Place Mode
+With `--in-place` flag, the tool:
+- Modifies the original file directly
+- Creates a backup: `file.js` → `file.untraced.original`
+- The backup is preserved even if you trace the file multiple times
 
 ## Example
 
@@ -157,14 +169,17 @@ npm test
 ```
 
 The test suite verifies:
-- Single file processing
-- Directory processing  
-- TypeScript support
-- Console.log format correctness
-- Meaningful line detection
-- Untrace functionality
-- In-place modification with backup creation
-- Help command functionality
+1. Single JavaScript file processing
+2. TypeScript file processing
+3. Directory processing  
+4. Console.log format correctness (file:line)
+5. Meaningful line detection
+6. Untrace functionality (for .traced files)
+7. In-place modification with backup creation
+8. In-place untrace functionality with backup restoration
+9. Help command functionality
+10. Multiple trace protection (preserves original backup)
+11. Error handling for missing backups
 
 ### Example Tests
 
@@ -180,6 +195,21 @@ The `examples/` directory contains comprehensive test files:
 2. **Analyze**: Traverses the tree to identify meaningful code nodes
 3. **Insert**: Adds `console.log` statements after each meaningful line
 4. **Output**: Writes traced version with `.traced` extension
+
+## Edge Cases and Behavior
+
+### Multiple Traces
+When tracing a file multiple times in in-place mode:
+- The original backup (`.untraced.original`) is preserved
+- Only the first trace creates the backup
+- Subsequent traces modify the already-traced file
+- This ensures you can always restore to the original untouched code
+
+### Untrace Without Backup
+If you try to untrace a file without a backup:
+- The tool will display an error message
+- The file remains unchanged
+- This prevents accidental data loss
 
 ## Supported File Types
 
