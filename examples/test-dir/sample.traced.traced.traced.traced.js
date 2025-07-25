@@ -6,7 +6,7 @@ console.log('/Users/konard/Code/konard/source-code-tracer/examples/test-dir/samp
 console.log('/Users/konard/Code/konard/source-code-tracer/examples/test-dir/sample.traced.traced.traced.js:3');
 console.log('/Users/konard/Code/konard/source-code-tracer/examples/test-dir/sample.traced.traced.js:2');
 console.log('/Users/konard/Code/konard/source-code-tracer/examples/test-dir/sample.traced.traced.traced.js:4');
-console.log('/Users/konard/Code/konard/source-code-tracer/test-dir/sample.js:1');
+console.log('/Users/konard/Code/konard/source-code-tracer/examples/test-dir/sample.js:1');
 console.log('/Users/konard/Code/konard/source-code-tracer/examples/test-dir/sample.traced.traced.traced.js:5');
 console.log('/Users/konard/Code/konard/source-code-tracer/examples/test-dir/sample.traced.traced.js:3');
 console.log('/Users/konard/Code/konard/source-code-tracer/examples/test-dir/sample.traced.traced.traced.js:6');
